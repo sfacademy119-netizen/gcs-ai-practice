@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCS AI 실습 (학습자용)</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: '-apple-system', BlinkMacSystemFont, sans-serif; background-color: #0f172a; margin: 0; padding: 15px; color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding-bottom: 50px; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; width: 100%; max-width: 450px; box-sizing: border-box; position: relative; z-index: 10; }
+        h2 { margin-top: 0; font-size: 18px; color: #38bdf8; text-align: center; margin-bottom: 15px; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #94a3b8; }
+        .input-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 15px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #2563eb; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        .patient-profile-card { background: #0f172a; border: 1px solid #38bdf8; border-radius: 10px; padding: 12px; margin-bottom: 15px; font-size: 12px; line-height: 1.5; }
+        .chat-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; height: 250px; overflow-y: auto; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; }
+        .msg.student { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg.patient { background: #334155; color: #f8fafc; align-self: flex-start; border-bottom-left-radius: 2px; }
+
+        .chat-input-area { display: flex; gap: 8px; margin-bottom: 15px; }
+        .chat-input-area input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; }
+        .btn-send { background: #10b981; color: white; border: none; padding: 0 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .gcs-select-zone { background: #111827; border: 1px solid #334155; padding: 12px; border-radius: 10px; }
+        .gcs-select-zone select { background: #0f172a; color: white; padding: 8px; border-radius: 5px; border: 1px solid #475569; }
+        
+        .waiting-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.98); display:none; align-items:center; justify-content:center; z-index:9999; text-align:center; }
+        .waiting-box { background: #1e293b; border: 1px solid #38bdf8; padding: 30px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 85%; max-width: 340px; }
+        
+        .feedback-box { background: #06d6a0; color: #0b1329; border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 13px; line-height: 1.6; font-weight: 500; display: none; }
+
+        .creator-watermark { position: fixed; bottom: 15px; right: 20px; font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: bold; color: #64748b; letter-spacing: 3px; z-index: 100000; pointer-events: none; opacity: 0.7; text-align: right; }
+        .creator-watermark span { color: #38bdf8; font-size: 12px; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="loginSection">
+        <h2>📱 의식 사정 AI 실습방 입장</h2>
+        <div class="input-group"><label>학번</label><input type="text" id="studentId" placeholder="예: 20261234"></div>
+        <div class="input-group"><label>성명</label><input type="text" id="studentName" placeholder="예: 홍길동"></div>
+        <button class="btn" onclick="enterRoom()">실습방 입장하기</button>
+    </div>
+
+    <div id="quizSection" style="display: none;">
+        <h2>🏥 응급실 가상 환자 의식 사정</h2>
+        <div class="patient-profile-card">
+            <div id="pName" style="font-weight:bold; color:#38bdf8; margin-bottom:6px;">환자 로딩 중...</div>
+            <div id="pMeta" style="color:#cbd5e1; margin-bottom:4px;">-</div>
+            <div id="pCc" style="color:#fef08a;">-</div>
+        </div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-input-area">
+            <input type="text" id="studentMsg" placeholder="환자에게 질문하거나 자극을 주세요...">
+            <button class="btn-send" onclick="sendToPatient()">전송</button>
+        </div>
+        <div class="gcs-select-zone">
+            <div style="display: flex; gap: 5px; margin-bottom:10px;">
+                <select id="resE" style="flex:1;"><option value="4">E4</option><option value="3">E3</option><option value="2">E2</option><option value="1">E1</option></select>
+                <select id="resV" style="flex:1;"><option value="5">V5</option><option value="4">V4</option><option value="3">V3</option><option value="2">V2</option><option value="1">V1</option></select>
+                <select id="resM" style="flex:1;"><option value="6">M6</option><option value="5">M5</option><option value="4">M4</option><option value="3">M3</option><option value="2">M2</option><option value="1">M1</option></select>
+            </div>
+            <button class="btn" id="submitBtn" onclick="submitFinalAnswer()" style="margin:0; background:#10b981;">최종 판정 제출</button>
+        </div>
+        
+        <div class="feedback-box" id="feedbackBox">
+            <b style="font-size:14px;">🎯 교수자 임상 피드백 및 해설</b><br><br>
+            <span id="fbText"></span>
+        </div>
+    </div>
+</div>
+
+<div class="waiting-overlay" id="waitingOverlay">
+    <div class="waiting-box">
+        <h3 style="color:#38bdf8; margin-top:0;">👥 가상 실습방 대기실</h3>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.6; margin-bottom:0;">
+            성공적으로 연결되었습니다.<br>
+            <span style="color:#fef08a; font-weight:bold;">[교수님이 시나리오를 전송하면 실습이 시작됩니다]</span>
+        </p>
+    </div>
+</div>
+
+<div class="creator-watermark">CREATED BY<br><span>PROF. KYUNG-MI KIM</span></div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://gcs-test-eb738-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let myKey = "";
+    let activeCaseIdx = -1;
+    let chatLog = [];
+    let alertTriggered = false; 
+    let isFirstEntry = true;
+
+    // 🛠️ [정답 힌트 전면 제거 및 초기 모습 추가] 
+    const aiResponses = {
+        0: { 
+            name: "Case 01: 김지주 환자", 
+            meta: "남성 / 45세 / 극심한 두통 및 오심",
+            init: "🚨 [환자 상태] 침대에 누워 무겁게 눈을 감고 있으며, 간헐적으로 머리를 감싸 쥐며 괴로운 신음을 내고 있습니다.",
+            call: "음... 어... 왜들 그래요... (간신히 눈을 무겁게 떴다가 피로한 듯 이내 다시 감아버린다.)",
+            where: "여기가 어디냐고... 집은 아닌 것 같은데... 내 방인가요? 정신이 하나도 없네...",
+            pain: "얼굴을 찡그리며 눈을 질끈 감은 상태를 유지하나, 아픈 부위를 향해 가슴 위로 손을 뻗어 자극을 명확히 밀쳐내려 방어합니다.",
+            command: "손을 움직여보려 하지만 힘이 잘 안 들어가는지 움찔거리기만 하고 완벽히 지시대로 쥐지 못합니다.",
+            default: "머리가 깨질 것 같이 아파요... 속도 너무 울렁거리고 죽겠어요...", 
+            desc: "정답: E3 V4 M5 (총 12점)\n[해설] 지주막하 출혈(SAH) 환자입니다. 불러야 눈을 뜨며(E3), 대화 시 혼돈 양상(V4)을 보이고, 통증 자극 부위를 국소화(M5)합니다." 
+        },
+        1: { 
+            name: "Case 02: 박외상 환자", 
+            meta: "남성 / 28세 / 교통사고 두부 외상",
+            init: "🚨 [환자 상태] 외상의 흔적이 보이며, 미동도 없이 깊게 눈을 감은 채 바닥에 쓰러져 누워있습니다.",
+            call: "(환자의 이름을 크게 외치고 흔들어 깨워도 눈을 뜨려는 기색을 전혀 보이지 않습니다.)",
+            where: "...으으... 어... (의미 있는 단어나 말은 전혀 하지 못하고 신음 소리만 간신히 흘러나옵니다.)",
+            pain: "💥 [통증 반응] 강력한 압박 자극을 가하자 눈을 번쩍 뜨며 순간적으로 의료진을 쳐다봅니다. 이와 동시에 양쪽 팔을 안쪽으로 단단하게 말아 올리고 주먹을 꽉 쥡니다.",
+            command: "(지시하는 명령을 전혀 알아듣지 못하며 아무런 수의적 신체 움직임이 없습니다.)",
+            default: "...으으... 으...", 
+            desc: "정답: E2 V2 M3 (총 7점)\n[해설] 중증 두부외상 환자입니다. 통증 자극에만 눈을 뜨고(E2), 신음만 내며(V2), 대뇌피질 손상 징후인 이상 굴곡 반응(M3)을 보입니다." 
+        },
+        2: { 
+            name: "Case 03: 이경색 환자", 
+            meta: "여성 / 71세 / 우측 마비 및 구음장애",
+            init: "🚨 [환자 상태] 침대에 누워 자발적으로 눈을 똑바로 뜨고 있으며, 주변을 두리번거리고 있습니다.",
+            call: "(의료진이 다가가자 이미 자발적으로 눈을 또렷하게 뜬 채 시선을 맞추고 계속 주시하고 있습니다.)",
+            where: "어... 집... 가야 돼... 시장... 밥... 해야... (단어 조각들을 부적절하게 나열함)",
+            pain: "아픈 표정을 지으며 마비가 없는 왼쪽 사지를 휘둘러 자극을 정확히 치워냅니다.",
+            command: "‘왼손을 꽉 쥐어보세요’라는 명령에 정상인 왼손을 힘차게 꽉 쥔다.",
+            default: "...어... 말이... 마음대로 안 나와...", 
+            desc: "정답: E4 V3 M6 (총 13점)\n[해설] 급성 뇌경색 환자입니다. 자발적 개안 상태(E4)이나, 부적절한 단어 나열(V3), 지시에 복종(M6)합니다." 
+        },
+        3: { 
+            name: "Case 04: 최주정 환자", 
+            meta: "남성 / 52세 / 노상 투척 및 인사불성",
+            init: "🚨 [환자 상태] 술 냄새가 진하게 나며, 완전히 눈을 감고 축 늘어진 채 반응이 없이 누워있습니다.",
+            call: "(알코올취가 심하며, 고함을 지르고 흔들어 깨워보아도 전혀 눈을 뜨지 못합니다.)",
+            where: "(완전한 침묵 상태. 어떤 질문이나 유도에도 입을 열지 않습니다.)",
+            pain: "💥 [통증 반응] 흉골을 매우 강하게 압박했으나 눈은 전혀 뜨지 못합니다. 다만, 통증을 피하려는 듯 온몸을 웅크리며 사지를 움츠려 자극 지점으로부터 멀어지려 도피합니다.",
+            command: "몸이 완전히 이완되어 축 늘어져 있으며, 어떠한 구두 지시 명령에도 반응하지 않습니다.",
+            default: "...", 
+            desc: "정답: E1 V1 M4 (총 6점)\n[해설] 알코올 중독 혼수 환자입니다. 개안 없고(E1), 발성 없으나(V1), 통증에 회피하려는 정상 굴곡 운동(M4)을 보입니다." 
+        },
+        4: { 
+            name: "Case 05: 재난 환자", 
+            meta: "고령 남성 / 75세 / 추락으로 인한 뇌간 타격",
+            init: "🚨 [환자 상태] 창백한 안색으로 미동도 없이 감은 눈을 유지하고 있으며, 호흡이 불규칙해 보입니다.",
+            call: "(큰 소리로 자극을 주어도 동공 및 안면 근육에 어떠한 미동도 없이 감은 눈을 유지합니다.)",
+            where: "(자발 호흡 양상만 불규칙하게 관찰될 뿐, 어떠한 소리나 반응도 관찰되지 않습니다.)",
+            pain: "💥 [통증 반응] 손톱 끝을 강하게 압박해보아도 눈은 미동조차 없이 굳게 감겨있습니다. 반면 유해 자극이 가해지자 양팔을 아래로 뻣뻣하게 쭉 펴고 손목을 바깥쪽으로 강하게 비틀며 뻗습니다.",
+            command: "어떠한 자발적 지시 이행이나 수의적 움직임이 관찰되지 않습니다.",
+            default: "...", 
+            desc: "정답: E1 V1 M2 (총 4점)\n[해설] 뇌간 손상 상태입니다. 개안 없고(E1), 발성 없으며(V1), 이상 신전 반응(M2)을 보입니다." 
+        }
+    };
+
+    function enterRoom() {
+        const id = document.getElementById("studentId").value.trim();
+        const name = document.getElementById("studentName").value.trim();
+        if(!id || !name) { alert("학번과 성명을 입력하세요."); return; }
+        myKey = id;
+        db.ref('students/' + id).set({ id: id, name: name, status: "ready" }).then(() => {
+            db.ref('students/' + id).onDisconnect().remove();
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("quizSection").style.display = "block";
+            document.getElementById("waitingOverlay").style.display = "flex"; 
+            listenServer();
+        });
+    }
+
+    function listenServer() {
+        db.ref('quizState').on('value', snap => {
+            const state = snap.val();
+            if(!state) return;
+
+            if(state.currentCase === undefined || state.currentCase === null || state.currentCase === -1 || state.currentCase === "-1") {
+                isFirstEntry = false; 
+                document.getElementById("waitingOverlay").style.display = "flex";
+                document.getElementById("feedbackBox").style.display = "none";
+                return;
+            }
+
+            if (isFirstEntry) {
+                activeCaseIdx = state.currentCase;
+                isFirstEntry = false; 
+                document.getElementById("waitingOverlay").style.display = "flex"; 
+                return;
+            }
+
+            if(activeCaseIdx !== state.currentCase) {
+                activeCaseIdx = state.currentCase;
+                alertTriggered = false; 
+                document.getElementById("waitingOverlay").style.display = "none"; 
+                document.getElementById("feedbackBox").style.display = "none";
+                loadCase(activeCaseIdx);
+                return;
+            }
+
+            if(state.revealStatus === "show") {
+                if(!alertTriggered) {
+                    alertTriggered = true;
+                    alert("정답/해설이 공개되었습니다.");
+                    document.getElementById("fbText").innerText = aiResponses[activeCaseIdx].desc;
+                    document.getElementById("feedbackBox").style.display = "block";
+                }
+            }
+        });
+    }
+
+    function loadCase(idx) {
+        const data = aiResponses[idx];
+        if(!data) return;
+        document.getElementById("pName").innerText = data.name;
+        document.getElementById("pMeta").innerText = data.meta;
+        document.getElementById("pCc").innerText = "주소증: " + data.name + " 의식 수준 사정 진행";
+        
+        // 🌟 [최초 진입 시 외형 기술] 환자를 처음 마주했을 때의 초기 상태 브리핑 제공
+        document.getElementById("chatBox").innerHTML = `<div class="msg patient">${data.init}</div>`;
+        
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("submitBtn").style.background = "#10b981";
+        chatLog = [];
+    }
+
+    function sendToPatient() {
+        const text = document.getElementById("studentMsg").value.trim();
+        if(!text) return;
+        appendMsg(text, "student");
+        document.getElementById("studentMsg").value = "";
+
+        const data = aiResponses[activeCaseIdx];
+        let reply = data.default;
+        
+        const callK = ["눈", "이름", "보세요", "들리", "깨워", "환자분", "선생님", "제 말", "여보세요", "일어나"];
+        const whereK = ["어디", "병원", "날짜", "며칠", "몇월", "연도", "여기가", "누구", "집"];
+        const painK = ["아픈", "자극", "꼬집", "누르", "통증", "압박", "트래피지우스", "흉골", "손톱"];
+        const commK = ["쥐어", "올려", "잡아", "움직", "따라", "발가락", "다리", "명령"];
+
+        if (callK.some(k => text.includes(k))) reply = data.call;
+        else if (whereK.some(k => text.includes(k))) reply = data.where;
+        else if (painK.some(k => text.includes(k))) reply = data.pain;
+        else if (commK.some(k => text.includes(k))) reply = data.command;
+
+        setTimeout(() => appendMsg(reply, "patient"), 400);
+    }
+
+    function appendMsg(text, sender) {
+        const box = document.getElementById("chatBox");
+        const div = document.createElement("div");
+        div.className = "msg " + sender;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+        chatLog.push((sender === "student" ? "[학생]: " : "[환자]: ") + text);
+        db.ref('students/' + myKey).update({ logs: chatLog.join("\n") });
+    }
+
+    function submitFinalAnswer() {
+        const e = document.getElementById("resE").value;
+        const v = document.getElementById("resV").value;
+        const m = document.getElementById("resM").value;
+        db.ref('students/' + myKey).update({ answer: `E${e}V${v}M${m}`, status: "submitted" });
+        alert("교수님께 제출 완료되었습니다.");
+        document.getElementById("submitBtn").disabled = true;
+        document.getElementById("submitBtn").style.background = "#64748b";
+    }
+</script>
+</body>
+</html>
