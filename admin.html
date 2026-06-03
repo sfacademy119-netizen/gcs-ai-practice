@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCS 실습 현황 대시보드 (교수자용)</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b1329; margin: 0; padding: 20px; color: #f8fafc; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .main-grid { display: grid; grid-template-columns: 1fr 3fr; gap: 25px; margin-top: 10px; }
+        .left-panel { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: #1c2541; border-radius: 8px; padding: 20px; border: 1px solid #1e293b; }
+        
+        .panel-title { font-size: 14px; font-weight: bold; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
+        .title-step1 { color: #ff5e7e; }
+        .title-step2 { color: #4ade80; }
+        .title-qr { color: #38bdf8; }
+        .title-reset { color: #fca5a5; }
+
+        select { width: 100%; padding: 12px; background: #0b1329; color: white; border: 1px solid #475569; border-radius: 6px; font-size: 14px; margin-bottom: 12px; font-weight: bold; }
+        .btn { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 15px; margin-bottom: 5px; }
+        .btn-primary { background: #3a86ff; }
+        .btn-success { background: #06d6a0; }
+        .btn-danger { background: #e63946; }
+        
+        .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; padding: 15px; border-radius: 6px; text-align: center; }
+        #qrContainer { background: white; padding: 8px; border-radius: 6px; display: inline-block; }
+        #qrContainer img { display: block; max-width: 160px; height: auto; }
+
+        /* 우측 테이블 영역 */
+        .right-title { color: #38bdf8; font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 15px; }
+        .table-wrapper { border-radius: 6px; overflow: hidden; background: #1c2541; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 14px; border-bottom: 1px solid #0b1329; font-size: 13px; }
+        th { background: #0b1329; color: #64748b; font-weight: bold; }
+        td { color: #cbd5e1; }
+        
+        .status-ready { color: #fef08a; }
+        .status-submitted { color: #4ade80; font-weight: bold; }
+        .log-area { font-family: monospace; background: #0b1329; padding: 8px; border-radius: 4px; font-size: 12px; max-height: 120px; overflow-y: auto; color: #cbd5e1; line-height: 1.5; white-space: pre-wrap; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="main-grid">
+        <div class="left-panel">
+            <div class="panel">
+                <div class="panel-title title-step1">📌 단계 1: 가상 환자 시나리오 출제 (총 5문항)</div>
+                <select id="caseSelect">
+                    <option value="0">-- 미배정 (학습자 대기 상태) --</option>
+                    <option value="1">Case 01: 김지주 환자 (SAH)</option>
+                    <option value="2">Case 02: 박외상 환자 (두부외상)</option>
+                    <option value="3">Case 03: 이경색 환자 (뇌경색)</option>
+                    <option value="4">Case 04: 최주정 환자 (알코올중독)</option>
+                    <option value="5">Case 05: 재난 환자 (뇌간손상)</option>
+                </select>
+                <button class="btn btn-primary" onclick="deployCase()">📢 전 학생에게 환자 전송</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title title-step2">🎯 단계 2: 실습 종료 및 피드백 공유</div>
+                <button class="btn btn-success" onclick="revealFeedback()">🔓 전 학생에게 정답/해설 공개</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title title-qr" style="justify-content: center;">📱 학생 모바일 접속 QR 코드</div>
+                <div class="qr-box">
+                    <div id="qrContainer"></div>
+                </div>
+            </div>
+
+            <div class="panel" style="background: transparent; border: none; padding: 0;">
+                <div style="font-size:12px; color:#ef4444; margin-bottom:6px; font-weight:bold;">▲ 시스템 안전 리셋</div>
+                <button class="btn btn-danger" onclick="resetSystem()">학생 명단 및 방 리셋</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="right-title">👥 실습 참여 학생 명단 (현재 <span id="studentCount">0</span>명 접속)</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="12%">학번</th>
+                            <th width="12%">성명</th>
+                            <th width="56%">실시간 간호 사정(질문/처치) 로그</th>
+                            <th width="10%">제출 답안</th>
+                            <th width="10%">실습 판정</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        <tr><td colspan="5" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://gcs-test-eb738-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 🌟 [중요] 1단계에서 새로 만든 Netlify 주소를 여기에 적어주세요!
+    const targetUrl = "https://vocal-truffle-36781c.netlify.app/"; 
+
+    function makeLiveQR(url) {
+        const qr = qrcode(4, 'M');
+        qr.addData(url);
+        qr.make();
+        document.getElementById('qrContainer').innerHTML = qr.createImgTag(5);
+    }
+    makeLiveQR(targetUrl);
+
+    function deployCase() {
+        const idx = parseInt(document.getElementById("caseSelect").value) - 1;
+        db.ref('quizState').set({ currentCase: idx, revealStatus: "hide" });
+        if(idx === -1) {
+            alert("대기 상태로 변경되었습니다.");
+        } else {
+            alert(`Case 0${idx + 1}번 환자를 출제했습니다.`);
+        }
+    }
+
+    function revealFeedback() {
+        db.ref('quizState').update({ revealStatus: "show" });
+        alert("학생 화면에 정답 알림창과 해설을 전송했습니다.");
+    }
+
+    function resetSystem() {
+        if(confirm("명단과 진행 상황을 초기화하시겠습니까?")) {
+            db.ref('students').remove();
+            db.ref('quizState').set({ currentCase: -1, revealStatus: "hide" });
+            alert("초기화 완료.");
+        }
+    }
+
+    db.ref('students').on('value', snap => {
+        const list = snap.val();
+        const tbody = document.getElementById("studentTableBody");
+        const countSpan = document.getElementById("studentCount");
+        tbody.innerHTML = "";
+
+        if(!list) {
+            countSpan.innerText = "0";
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>';
+            return;
+        }
+
+        let count = 0;
+        for(let key in list) {
+            count++;
+            const s = list[key];
+            const tr = document.createElement("tr");
+            const isSub = s.status === 'submitted';
+
+            tr.innerHTML = `
+                <td>${s.id}</td>
+                <td><b>${s.name}</b></td>
+                <td><div class="log-area">${s.logs || '대기 중...'}</div></td>
+                <td><span style="color:#4ade80;">${s.answer || '-'}</span></td>
+                <td class="${isSub ? 'status-submitted' : 'status-ready'}">${isSub ? '제출완료' : '실습중'}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+        countSpan.innerText = count;
+    });
+</script>
+</body>
+</html>
