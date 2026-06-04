@@ -96,14 +96,13 @@
     let chatLog = [];
     let alertTriggered = false; 
 
-    // 🔒 [GCS 평가 연계성 강화 데이터셋]
     const aiResponses = {
         0: { 
             name: "Case 01: 김지주 환자", 
             meta: "남성 / 45세 / 극심한 두통 및 오심",
             init: "🚨 [환자 상태] 침대에 누워 무겁게 눈을 감고 있으며, 간헐적으로 머리를 감싸 쥐며 괴로운 신음을 내고 있습니다.",
             call: "(눈을 감고 있다가 말을 걸면) 음... 어... 왜들 그래요... (간신히 눈을 무겁게 떴다가 피로한 듯 이내 다시 감아버린다.)",
-            where: "여기가 어디냐고... 집은 아닌 것 같은데... 내 방인가요? 정신이 하나도 없네... (환자는 장소 지남력에 혼돈을 보입니다.)",
+            where: "여기가 어디냐고... 집은 아닌 것 같은데... 내 방인가요? 정신이 하나도 없네... (환자는 본인의 장소 지남력에 혼돈을 보입니다.)",
             pain: "💥 [통증 자극 반응] 중심성 통증 자극(흉골 압박 등)을 주자 환자가 인상을 찡그리며 아픈 부위를 향해 가슴 위로 손을 번쩍 뻗어 의료진의 손을 명확하게 밀쳐내려고 시도합니다. (유해 자극을 제거하려는 국소화 반응, M5)",
             commandBase: "🖐️ [운동 지시 반응] '{REQ}'라는 언어 지시 명령을 내리자, 환자는 신음을 내며 몸을 아주 미세하게 움찔거리거나 힘을 주려고 할 뿐, 의식 저하와 심한 두통으로 인해 지시 사항을 명확히 수행하지 못합니다. (구두 명령 불응 상태)",
             default: "머리가 깨질 것 같이 아파요... 속도 너무 울렁거리고 죽겠어요...", 
@@ -164,8 +163,6 @@
             db.ref('students/' + id).onDisconnect().remove();
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("quizSection").style.display = "block";
-            
-            // 처음 입장 시 무조건 띄우던 로직 제거 (서버 상태가 즉각 반영되도록 유도)
             listenServer();
         });
     }
@@ -177,7 +174,6 @@
 
             const serverCase = parseInt(state.currentCase);
 
-            // 1. 서버가 대기 상태(-1)일 경우 강제로 대기창 노출
             if(isNaN(serverCase) || serverCase === -1) {
                 activeCaseIdx = -1;
                 document.getElementById("waitingOverlay").style.display = "flex";
@@ -185,7 +181,6 @@
                 return;
             }
 
-            // 2. 서버가 시나리오 상태(0~4)일 경우 대기창 닫고 문제 렌더링
             if(activeCaseIdx !== serverCase || document.getElementById("waitingOverlay").style.display === "flex") {
                 activeCaseIdx = serverCase;
                 alertTriggered = false; 
@@ -194,7 +189,6 @@
                 loadCase(activeCaseIdx);
             }
 
-            // 3. 정답/해설 공개 상태 처리
             if(state.revealStatus === "show") {
                 if(!alertTriggered) {
                     alertTriggered = true;
@@ -227,4 +221,64 @@
         const text = document.getElementById("studentMsg").value.trim();
         if(!text) return;
         appendMsg(text, "student");
-        document
+        document.getElementById("studentMsg").value = "";
+
+        const data = aiResponses[activeCaseIdx];
+        if(!data) return;
+        
+        let reply = data.default;
+        
+        // 키워드 완전 격리 
+        const painK = ["통증", "자극", "꼬집", "누르", "압박", "흉골", "손톱", "아프", "아픈"];
+        const commK = ["손", "팔", "다리", "발", "쥐어", "잡아", "들어", "올려", "움직", "펴", "구부", "악수", "상지", "하지", "명령"];
+        const whereK = ["어디", "병원", "날짜", "오늘", "며칠", "이름", "성함", "연도", "장소", "시간", "누구", "기억", "여기가"];
+        const callK = ["눈", "떠", "들리", "깨워", "환자분", "여보세요", "일어나", "제 말"];
+
+        if (painK.some(k => text.includes(k))) {
+            reply = data.pain;
+        } 
+        else if (commK.some(k => text.includes(k))) {
+            let userReq = text.replace(/주세요|해봐요|보세요|어디/g, "").trim();
+            if(userReq.length > 15) userReq = userReq.substring(0, 15) + "...";
+            if(!userReq) userReq = "지시하신 명령";
+            
+            reply = data.commandBase.replace("{REQ}", userReq);
+        } 
+        else if (whereK.some(k => text.includes(k))) {
+            reply = data.where;
+        } 
+        else if (callK.some(k => text.includes(k))) {
+            reply = data.call;
+        }
+
+        setTimeout(() => appendMsg(reply, "patient"), 400);
+    }
+
+    function appendMsg(text, sender) {
+        const box = document.getElementById("chatBox");
+        const div = document.createElement("div");
+        div.className = "msg " + sender;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+        chatLog.push((sender === "student" ? "[학생]: " : "[환자]: ") + text);
+        
+        if(myKey) {
+            db.ref('students/' + myKey).update({ logs: chatLog.join("\n") });
+        }
+    }
+
+    function submitFinalAnswer() {
+        const e = document.getElementById("resE").value;
+        const v = document.getElementById("resV").value;
+        const m = document.getElementById("resM").value;
+        if(myKey) {
+            db.ref('students/' + myKey).update({ answer: `E${e}V${v}M${m}`, status: "submitted" });
+            alert("교수님께 제출 완료되었습니다.");
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("submitBtn").style.background = "#64748b";
+        }
+    }
+</script>
+</body>
+</html>
