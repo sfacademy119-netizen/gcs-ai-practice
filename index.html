@@ -1,37 +1,76 @@
-// sendToPatient 함수 내부를 아래처럼 순서대로 배치했습니다. 
-// "팔"이나 "손"이 들어간 문장은 무조건 운동 지시(commK)로 가장 먼저 걸리게 순서를 바꿨습니다.
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>GCS AI 실습</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #0f172a; color: white; padding: 20px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; }
+        .chat-box { height: 300px; overflow-y: auto; background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; }
+        .student { background: #2563eb; align-self: flex-end; }
+        .patient { background: #334155; align-self: flex-start; }
+    </style>
+</head>
+<body>
 
-function sendToPatient() {
-    const text = document.getElementById("studentMsg").value.trim();
-    if(!text) return;
-    appendMsg(text, "student");
-    document.getElementById("studentMsg").value = "";
+<div class="card">
+    <div id="quizSection">
+        <div id="pName" style="color:#38bdf8; font-weight:bold;">환자 로딩 중...</div>
+        <div class="chat-box" id="chatBox"></div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="studentMsg" style="flex:1;" placeholder="지시를 입력하세요...">
+            <button onclick="sendToPatient()">전송</button>
+        </div>
+    </div>
+</div>
 
-    const data = aiResponses[activeCaseIdx];
-    if(!data) return;
-    
-    // 키워드 정의
-    const commK = ["손", "팔", "다리", "발", "움직", "펴", "구부", "악수", "상지", "하지", "지시", "명령"];
-    const painK = ["통증", "자극", "꼬집", "누르", "압박", "흉골", "손톱", "아프", "아픈"];
-    const whereK = ["어디", "병원", "날짜", "오늘", "며칠", "이름", "성함", "연도", "장소", "시간", "누구", "기억", "여기가"];
-    const callK = ["눈", "떠", "들리", "깨워", "환자분", "여보세요", "일어나"];
+<script>
+    const firebaseConfig = { databaseURL: "https://gcs-test-eb738-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let activeCaseIdx = 0; // 예시 인덱스
 
-    let reply = data.default;
+    const aiResponses = {
+        0: { 
+            commandBase: "🖐️ [운동 지시 반응] 지시하신 '{REQ}'를 이해하고 힘을 주려 하지만, 의식 저하로 인해 명확하게 수행하지 못합니다.",
+            pain: "💥 [통증 자극 반응] 아픈 부위를 향해 손을 뻗어 밀쳐냅니다.",
+            default: "머리가 아파요..."
+        }
+    };
 
-    // 핵심 수정: commK(운동지시)를 가장 먼저 확인하여 다른 키워드에 뺏기지 않게 함
-    if (commK.some(k => text.includes(k))) {
-        let userReq = text.replace(/주세요|해봐요|보세요|어디/g, "").trim();
-        reply = data.commandBase.replace("{REQ}", userReq);
-    } 
-    else if (painK.some(k => text.includes(k))) {
-        reply = data.pain;
-    } 
-    else if (whereK.some(k => text.includes(k))) {
-        reply = data.where;
-    } 
-    else if (callK.some(k => text.includes(k))) {
-        reply = data.call;
+    function sendToPatient() {
+        const input = document.getElementById("studentMsg");
+        const text = input.value.trim();
+        if(!text) return;
+        
+        // 1. 화면 표시
+        const box = document.getElementById("chatBox");
+        box.innerHTML += `<div class="msg student">${text}</div>`;
+        input.value = "";
+
+        // 2. 키워드 우선순위 검사 (가장 핵심!)
+        const commK = ["손", "팔", "다리", "발", "움직", "펴", "구부", "들어", "올려"];
+        const painK = ["통증", "자극", "꼬집", "압박", "아픈"];
+        
+        let reply = aiResponses[activeCaseIdx].default;
+
+        // [핵심] 운동 명령(commK)이 들어갔는지 가장 먼저 확인
+        if (commK.some(k => text.includes(k))) {
+            reply = aiResponses[activeCaseIdx].commandBase.replace("{REQ}", text);
+        } 
+        else if (painK.some(k => text.includes(k))) {
+            reply = aiResponses[activeCaseIdx].pain;
+        }
+
+        // 3. 환자 응답 표시
+        setTimeout(() => {
+            box.innerHTML += `<div class="msg patient">${reply}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }, 500);
     }
-
-    setTimeout(() => appendMsg(reply, "patient"), 400);
-}
+</script>
+</body>
+</html>
