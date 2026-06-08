@@ -106,7 +106,7 @@
             pain: "💥 [통증 자극 반응] 중심성 통증 자극(흉골 압박 등)을 주자 환자가 인상을 찡그리며 아픈 부위를 향해 가슴 위로 손을 번쩍 뻗어 의료진의 손을 명확하게 밀쳐내려고 시도합니다. (유해 자극을 제거하려는 국소화 반응, M5)",
             commandBase: "🖐️ [운동 지시 반응] '{REQ}'라는 언어 지시 명령을 내리자, 환자는 신음을 내며 몸을 아주 미세하게 움찔거리거나 힘을 주려고 할 뿐, 의식 저하와 심한 두통으로 인해 지시 사항을 명확히 수행하지 못합니다. (구두 명령 불응 상태)",
             default: "머리가 깨질 것 같이 아파요... 속도 너무 울렁거리고 죽겠어요...", 
-            desc: "임상 피드백:\n지주막하 출혈(SAH) 의심 환자입니다. 불러야 간신히 눈을 뜨는 상태(E3)이며, 언어 대화 시 장소와 상황을 혼동하는 양상(V4)을 보입니다. 또한 팔다리를 들라는 구두 지시(명령)에는 불응(M5)하나, 통증 자극을 주면 아픈 부위로 손이 정확하게 올라와 자극을 제거하려는 국소화(M5) 반응을 나타냅니다." 
+            desc: "임상 피드백:\n지주막하 출혈(SAH) 의심 환자입니다. 불러야 간신히 눈을 뜨는 상태(E3)이며, 언어 대화 시 장소와 상황을 혼동하는 양상(V4)을 보입니다. 또한 팔다리를 들라는 구두 지시(명령)에는 불응하나, 통증 자극을 주면 아픈 부위로 손이 정확하게 올라와 자극을 제거하려는 국소화(M5) 반응을 나타냅니다." 
         },
         1: { 
             name: "Case 02: 박외상 환자", 
@@ -114,7 +114,7 @@
             init: "🚨 [환자 상태] 외상의 흔적이 보이며, 미동도 없이 깊게 눈을 감은 채 바닥에 쓰러져 누워있습니다.",
             call: "(환자의 이름을 크게 외치고 흔들어 깨워보아도 눈을 뜨려는 기색을 전혀 보이지 않고 무반응입니다.)",
             where: "...으으... 어... (의미 있는 단어나 문장 형태는 전혀 구사하지 못하고, 목 안에서 흐느끼는 신음 소리만 간신히 흘러나옵니다.)",
-            pain: "💥 [통증 자극 반응] 흉골에 강력한 압박 자극을 가하자 감고 있던 눈을 번쩍 뜨며 순간적으로 의료진을 쳐다봅니다. 이와 동시에 양쪽 팔꿈치를 안쪽으로 단단하게 말아 올리며 주먹을 가슴 쪽으로 꽉 쥡니다. (이상 굴곡 반응, M3)",
+            pain: "💥 [통증 자극 반응] 흉골에 강력한 압박 자극을 가하자 감고 있던 눈을 번쩍 뜬 후, 양쪽 팔꿈치를 안쪽으로 단단하게 말아 올리며 주먹을 가슴 쪽으로 꽉 쥡니다. (이상 굴곡 반응, M3)",
             commandBase: "🖐️ [운동 지시 반응] '{REQ}'라고 크게 지시해보았으나, 환자는 어떠한 언어 명령도 알아듣지 못하며 수의적인 신체 움직임이 완전히 소실되어 미동조차 하지 않습니다. (구두 명령 무반응)",
             default: "...으으... 으...", 
             desc: "임상 피드백:\n중증 두부외상 환자입니다. 언어 소리 자극에는 개안이 없으나 강한 통증 자극을 줄 때만 눈을 뜨는 상태(E2)이고, 말이 아닌 신음소리만 낼 수 있습니다(V2). 구두 지시에는 사지가 전혀 움직이지 않으며, 유해 통증 자극을 가했을 때만 대뇌피질 손상 징후인 이상 굴곡 반응(Decorticate Posturing, M3)을 나타냅니다." 
@@ -125,8 +125,8 @@
             init: "🚨 [환자 상태] 침대에 누워 자발적으로 눈을 똑바로 뜨고 있으며, 주변 상황을 응시하며 두리번거리고 있습니다.",
             call: "(의료진이 다가가자 이미 자발적으로 눈을 또렷하게 뜬 채 시선을 맞추고 지속적으로 주시합니다.)",
             where: "어... 집... 가야 돼... 시장... 밥... 해야... (단어 조각들을 전혀 부적절하게 무작위로 나열하며 문장을 이어가지 못합니다.)",
-            pain: "💥 [통증 자극 반응] 마비측에 자극을 주면 아픈 표정을 지으며 마비가 없는 왼쪽 사지를 힘차게 휘둘러 의료진의 자극 손을 정확히 밀쳐내고 치워냅니다. (명령에 복종하므로 통증 자극 사정이 필수적이진 않으나 방어 반응은 뚜렷함)",
-            commandBase: "🖐️ [운동 지시 반응] '{REQ}'라고 지시하자, 우측 사지는 편마비(Hemiplegia)로 인해 전혀 움직이지 못합니다. 하지만 지시 사항을 정확하게 이해하고 **[마비가 없는 왼쪽 신체를 번쩍 들어 올리거나 명확하게 움직이며]** 구두 명령에 온전하게 복종(M6)합니다.",
+            pain: "💥 [통증 자극 반응] 통증 유해 자극을 주면 아픈 표정을 지으며 마비가 없는 왼쪽 사지를 힘차게 휘둘러 의료진의 자극 손을 정확히 밀쳐내고 치워냅니다. (방어 반응 뚜렷함)",
+            commandBase: "🖐️ [운동 지시 반응] '{REQ}'라고 지시하자, 우측 사지는 편마비(Hemiplegia)로 인해 전혀 움직이지 못합니다. 하지만 지시 사항을 정확하게 이해하고 [마비가 없는 왼쪽 신체를 번쩍 들어 올리거나 명확하게 움직이며] 구두 명령에 온전하게 복종(M6)합니다.",
             default: "...어... 말이... 마음대로 안 나와...", 
             desc: "임상 피드백:\n급성 뇌경색 환자입니다. 자극이 없어도 스스로 개안 상태를 유지(E4)하고 있으나, 대화 시 지남력이 상실되어 부적절한 단어 조각들만 단편적으로 나열(V3)하는 구음장애가 동반되었습니다. 우측 마비가 있으나 마비가 없는 좌측 사지를 이용하여 구두 지시 명령에 정확하게 복종(M6)하는 능력을 보여줍니다." 
         },
@@ -159,6 +159,10 @@
         const name = document.getElementById("studentName").value.trim();
         if(!id || !name) { alert("학번과 성명을 입력하세요."); return; }
         myKey = id;
+        
+        // 💡 로그인 시 무조건 대기실 화면(Overlay)을 켜고 시작합니다.
+        document.getElementById("waitingOverlay").style.display = "flex";
+        
         db.ref('students/' + id).set({ id: id, name: name, status: "ready" }).then(() => {
             db.ref('students/' + id).onDisconnect().remove();
             document.getElementById("loginSection").style.display = "none";
@@ -170,18 +174,19 @@
     function listenServer() {
         db.ref('quizState').on('value', snap => {
             const state = snap.val();
-            if(!state) return;
-
-            const serverCase = parseInt(state.currentCase);
-
-            if(isNaN(serverCase) || serverCase === -1) {
+            
+            // 💡 관리자가 문제를 출제하지 않았거나 상태가 초기화(-1)인 경우 대기창 유지
+            if(!state || isNaN(parseInt(state.currentCase)) || parseInt(state.currentCase) === -1) {
                 activeCaseIdx = -1;
                 document.getElementById("waitingOverlay").style.display = "flex";
                 document.getElementById("feedbackBox").style.display = "none";
                 return;
             }
 
-            if(activeCaseIdx !== serverCase || document.getElementById("waitingOverlay").style.display === "flex") {
+            const serverCase = parseInt(state.currentCase);
+
+            // 💡 새로운 문제가 활성화되었을 때만 대기창을 닫고 문제를 로딩합니다.
+            if(activeCaseIdx !== serverCase) {
                 activeCaseIdx = serverCase;
                 alertTriggered = false; 
                 document.getElementById("waitingOverlay").style.display = "none"; 
@@ -214,6 +219,11 @@
         document.getElementById("chatBox").innerHTML = `<div class="msg patient">${data.init}</div>`;
         document.getElementById("submitBtn").disabled = false;
         document.getElementById("submitBtn").style.background = "#10b981";
+        
+        // 드롭다운 스코어 박스 초기값 세팅 복구
+        document.getElementById("resE").value = "4";
+        document.getElementById("resV").value = "5";
+        document.getElementById("resM").value = "6";
         chatLog = [];
     }
 
@@ -228,21 +238,20 @@
         
         let reply = data.default;
         
-        // 키워드 완전 격리 
-        const painK = ["통증", "자극", "꼬집", "누르", "압박", "흉골", "손톱", "아프", "아픈"];
         const commK = ["손", "팔", "다리", "발", "쥐어", "잡아", "들어", "올려", "움직", "펴", "구부", "악수", "상지", "하지", "명령"];
+        const painK = ["통증", "자극", "꼬집", "누르", "압박", "흉골", "손톱", "아프", "아픈"];
         const whereK = ["어디", "병원", "날짜", "오늘", "며칠", "이름", "성함", "연도", "장소", "시간", "누구", "기억", "여기가"];
         const callK = ["눈", "떠", "들리", "깨워", "환자분", "여보세요", "일어나", "제 말"];
 
-        if (painK.some(k => text.includes(k))) {
-            reply = data.pain;
-        } 
-        else if (commK.some(k => text.includes(k))) {
-            let userReq = text.replace(/주세요|해봐요|보세요|어디/g, "").trim();
+        if (commK.some(k => text.includes(k))) {
+            let userReq = text.replace(/주세요|해봐요|보세요|어디|아파|아픈/g, "").trim();
             if(userReq.length > 15) userReq = userReq.substring(0, 15) + "...";
             if(!userReq) userReq = "지시하신 명령";
             
             reply = data.commandBase.replace("{REQ}", userReq);
+        } 
+        else if (painK.some(k => text.includes(k))) {
+            reply = data.pain;
         } 
         else if (whereK.some(k => text.includes(k))) {
             reply = data.where;
@@ -261,7 +270,7 @@
         div.innerText = text;
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
-        chatLog.push((sender === "student" ? "[학생]: " : "[환자]: ") + text);
+        chatLog.push((sender === "student" ? "[학생]: " : "[환정]: ") + text);
         
         if(myKey) {
             db.ref('students/' + myKey).update({ logs: chatLog.join("\n") });
