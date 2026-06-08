@@ -7,43 +7,40 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #0f172a; margin: 0; padding: 15px; color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body { font-family: sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; display: flex; justify-content: center; }
         .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; width: 100%; max-width: 450px; }
-        h2 { font-size: 18px; color: #38bdf8; text-align: center; margin-bottom: 15px; }
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #94a3b8; }
-        .input-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
-        .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #2563eb; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .patient-profile-card { background: #0f172a; border: 1px solid #38bdf8; border-radius: 10px; padding: 12px; margin-bottom: 15px; font-size: 12px; }
         .chat-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; height: 250px; overflow-y: auto; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
         .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; }
         .msg.student { background: #2563eb; align-self: flex-end; }
         .msg.patient { background: #334155; align-self: flex-start; }
-        .chat-input-area { display: flex; gap: 8px; }
-        .chat-input-area input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; }
-        .btn-send { background: #10b981; color: white; border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; }
+        .gcs-zone { display: flex; gap: 5px; margin-bottom: 10px; }
+        select { background: #0f172a; color: white; padding: 8px; border-radius: 5px; border: 1px solid #475569; flex: 1; }
+        .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #2563eb; color: white; font-weight: bold; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="card" id="mainCard">
     <div id="loginSection">
-        <h2>📱 의식 사정 AI 실습</h2>
-        <div class="input-group"><label>학번</label><input type="text" id="studentId"></div>
-        <div class="input-group"><label>성명</label><input type="text" id="studentName"></div>
+        <h2>📱 실습 입장</h2>
+        <input type="text" id="studentId" placeholder="학번" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="studentName" placeholder="성명" style="width:100%; padding:10px; margin-bottom:10px;">
         <button class="btn" onclick="enterRoom()">입장하기</button>
     </div>
 
     <div id="quizSection" style="display: none;">
-        <div class="patient-profile-card">
-            <div id="pName" style="font-weight:bold; color:#38bdf8;">환자 대기 중...</div>
-        </div>
+        <div id="pName" style="font-weight:bold; color:#38bdf8; margin-bottom:10px;">환자 로딩 중...</div>
         <div class="chat-box" id="chatBox"></div>
-        <div class="chat-input-area">
-            <input type="text" id="studentMsg" placeholder="지시/질문을 입력하세요">
-            <button class="btn-send" onclick="sendToPatient()">전송</button>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" id="studentMsg" style="flex:1; padding:10px; border-radius:8px;" placeholder="질문/자극 입력">
+            <button onclick="sendToPatient()" style="background:#10b981; border:none; color:white; padding:10px; border-radius:8px;">전송</button>
         </div>
-        <button class="btn" onclick="submitFinalAnswer()" style="background:#10b981;">최종 판정 제출</button>
+        <div class="gcs-zone">
+            <select id="resE"><option value="4">E4</option><option value="3">E3</option><option value="2">E2</option><option value="1">E1</option></select>
+            <select id="resV"><option value="5">V5</option><option value="4">V4</option><option value="3">V3</option><option value="2">V2</option><option value="1">V1</option></select>
+            <select id="resM"><option value="6">M6</option><option value="5">M5</option><option value="4">M4</option><option value="3">M3</option><option value="2">M2</option><option value="1">M1</option></select>
+        </div>
+        <button class="btn" style="background:#10b981;" onclick="submitFinalAnswer()">최종 판정 제출</button>
     </div>
 </div>
 
@@ -51,22 +48,14 @@
     const firebaseConfig = { databaseURL: "https://gcs-test-eb738-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    let myKey = "", activeCaseIdx = -1;
-
+    
+    let activeCaseIdx = -1;
     const aiResponses = {
-        0: { name: "Case 01: 김지주 환자", call: "음... 어... 왜들 그래요...", where: "여기가 어디죠? 병원인가요?", pain: "💥 아픈 부위를 손으로 밀쳐냅니다.", command: "🖐️ 손을 쥐려 하지만 힘이 들어가지 않아 움찔거립니다.", default: "머리가 아파요..." },
-        1: { name: "Case 02: 박외상 환자", call: "...", where: "...", pain: "💥 통증에 눈을 뜨며 팔을 굽히고 주먹을 쥡니다(굴곡 반응).", command: "🖐️ 아무런 반응이 없습니다.", default: "...으으..." },
-        2: { name: "Case 03: 이경색 환자", call: "이미 눈을 뜨고 의료진을 주시합니다.", where: "어... 집... 가야 돼... 시장...", pain: "💥 왼손으로 자극을 힘차게 밀쳐냅니다.", command: "🖐️ 명령을 이해하고 정상인 왼손을 힘차게 꽉 쥡니다.", default: "...말이 안 나와..." },
-        3: { name: "Case 04: 최주정 환자", call: "...", where: "...", pain: "💥 자극에 온몸을 비틀며 회피하려 합니다.", command: "🖐️ 아무런 반응이 없습니다.", default: "..." },
-        4: { name: "Case 05: 재난 환자", call: "...", where: "...", pain: "💥 팔을 아래로 펴며 비트는 신전 반응을 보입니다.", command: "🖐️ 아무런 반응이 없습니다.", default: "..." }
+        0: { name: "Case 01: 김지주 환자", init: "🚨 [환자 상태] 두통 호소 중.", call: "음... 어... 왜들 그래요...", where: "여기가 어디죠?", pain: "💥 손으로 밀쳐냅니다.", command: "🖐️ 손을 움찔거리기만 합니다.", default: "머리가 아파요..." },
+        2: { name: "Case 03: 이경색 환자", init: "🚨 [환자 상태] 눈을 뜨고 주시 중.", call: "이미 눈을 뜨고 있습니다.", where: "어... 집... 가야 돼...", pain: "💥 왼손으로 밀쳐냅니다.", command: "🖐️ 왼손을 힘차게 꽉 쥡니다.", default: "...말이 안 나와..." }
     };
 
     function enterRoom() {
-        const id = document.getElementById("studentId").value;
-        const name = document.getElementById("studentName").value;
-        if(!id || !name) return;
-        myKey = id;
         document.getElementById("loginSection").style.display = "none";
         document.getElementById("quizSection").style.display = "block";
         db.ref('quizState').on('value', (snap) => {
@@ -79,31 +68,30 @@
     }
 
     function loadCase(idx) {
-        document.getElementById("pName").innerText = aiResponses[idx].name;
-        document.getElementById("chatBox").innerHTML = `<div class="msg patient">환자가 준비되었습니다.</div>`;
+        const data = aiResponses[idx];
+        document.getElementById("pName").innerText = data.name;
+        document.getElementById("chatBox").innerHTML = `<div class="msg patient">${data.init}</div>`;
     }
 
     function sendToPatient() {
         const text = document.getElementById("studentMsg").value;
         const box = document.getElementById("chatBox");
         box.innerHTML += `<div class="msg student">${text}</div>`;
-        document.getElementById("studentMsg").value = "";
-
+        
         const data = aiResponses[activeCaseIdx];
         let reply = data.default;
-
-        // 우선순위: 운동(팔/손) > 통증 > 장소/질문 > 호출
+        
+        // 우선순위 로직 (운동 관련 질문 시 command 출력)
         if (/팔|손|움직|쥐어|펴|다리|명령/.test(text)) reply = data.command;
         else if (/아픈|통증|자극|꼬집|누르/.test(text)) reply = data.pain;
         else if (/어디|병원|날짜|이름|누구/.test(text)) reply = data.where;
         else if (/눈|불러|깨워|들리|여보세요/.test(text)) reply = data.call;
 
-        setTimeout(() => {
-            box.innerHTML += `<div class="msg patient">${reply}</div>`;
-        }, 400);
+        setTimeout(() => box.innerHTML += `<div class="msg patient">${reply}</div>`, 400);
+        document.getElementById("studentMsg").value = "";
     }
 
-    function submitFinalAnswer() { alert("제출되었습니다."); }
+    function submitFinalAnswer() { alert("제출 완료!"); }
 </script>
 </body>
 </html>
