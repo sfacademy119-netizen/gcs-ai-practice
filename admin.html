@@ -7,97 +7,93 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b1329; margin: 0; padding: 20px; color: #f8fafc; }
-        .container { max-width: 1600px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; margin: 0; padding: 20px; color: #f8fafc; }
+        .container { max-width: 1500px; margin: 0 auto; }
+        header { border-bottom: 2px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 26px; color: #38bdf8; }
         
-        .main-grid { display: grid; grid-template-columns: 1fr 3fr; gap: 25px; margin-top: 10px; }
+        .main-grid { display: grid; grid-template-columns: 1fr 2.5fr; gap: 20px; }
         .left-panel { display: flex; flex-direction: column; gap: 20px; }
-        .panel { background: #1c2541; border-radius: 8px; padding: 20px; border: 1px solid #1e293b; }
+        .panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+        h3 { margin-top: 0; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 8px; font-size: 16px; }
         
-        .panel-title { font-size: 14px; font-weight: bold; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; }
-        .title-step1 { color: #ff5e7e; }
-        .title-step2 { color: #4ade80; }
-        .title-qr { color: #38bdf8; }
-        .title-reset { color: #fca5a5; }
+        select { width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid #475569; border-radius: 6px; font-size: 14px; margin-bottom: 12px; }
+        .btn { width: 100%; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 15px; margin-bottom: 10px; }
+        .btn-primary { background: #2563eb; }
+        .btn-success { background: #10b981; }
+        .btn-danger { background: #ef4444; margin-top: 10px; }
+        
+        .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a; padding: 15px; border-radius: 10px; border: 1px solid #334155; text-align: center; }
+        #qrContainer { background: white; padding: 10px; border-radius: 8px; display: inline-block; }
+        #qrContainer img { display: block; max-width: 180px; height: auto; }
+        .url-display { margin-top: 10px; font-size: 12px; color: #4ade80; font-family: monospace; word-break: break-all; font-weight: bold; }
 
-        select { width: 100%; padding: 12px; background: #0b1329; color: white; border: 1px solid #475569; border-radius: 6px; font-size: 14px; margin-bottom: 12px; font-weight: bold; }
-        .btn { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 15px; margin-bottom: 5px; }
-        .btn-primary { background: #3a86ff; }
-        .btn-success { background: #06d6a0; }
-        .btn-danger { background: #e63946; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #38bdf8; font-size: 14px; }
+        td { font-size: 14px; }
         
-        .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0b1329; padding: 15px; border-radius: 6px; text-align: center; }
-        #qrContainer { background: white; padding: 8px; border-radius: 6px; display: inline-block; }
-        #qrContainer img { display: block; max-width: 160px; height: auto; }
-
-        /* 우측 테이블 영역 */
-        .right-title { color: #38bdf8; font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 15px; }
-        .table-wrapper { border-radius: 6px; overflow: hidden; background: #1c2541; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 14px; border-bottom: 1px solid #0b1329; font-size: 13px; }
-        th { background: #0b1329; color: #64748b; font-weight: bold; }
-        td { color: #cbd5e1; }
-        
-        .status-ready { color: #fef08a; }
+        .status-ready { color: #fef08a; font-weight: bold; }
         .status-submitted { color: #4ade80; font-weight: bold; }
-        .log-area { font-family: monospace; background: #0b1329; padding: 8px; border-radius: 4px; font-size: 12px; max-height: 120px; overflow-y: auto; color: #cbd5e1; line-height: 1.5; white-space: pre-wrap; }
+        .log-area { font-family: monospace; background: #0f172a; padding: 8px; border-radius: 4px; font-size: 12px; max-height: 250px; overflow-y: auto; color: #cbd5e1; line-height: 1.5; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
 
 <div class="container">
+    <header>
+        <h1>🏥 GCS 의식사정 실습 관리자 시스템</h1>
+    </header>
+
     <div class="main-grid">
         <div class="left-panel">
             <div class="panel">
-                <div class="panel-title title-step1">📌 단계 1: 가상 환자 시나리오 출제 (총 5문항)</div>
+                <h3>📌 단계 1: 가상 환자 시나리오 출제</h3>
                 <select id="caseSelect">
-                    <option value="0">-- 미배정 (학습자 대기 상태) --</option>
-                    <option value="1">Case 01: 김지주 환자 (SAH)</option>
-                    <option value="2">Case 02: 박외상 환자 (두부외상)</option>
-                    <option value="3">Case 03: 이경색 환자 (뇌경색)</option>
-                    <option value="4">Case 04: 최주정 환자 (알코올중독)</option>
-                    <option value="5">Case 05: 재난 환자 (뇌간손상)</option>
+                    <option value="0">Case 01: 김지주 환자 (SAH / 혼돈 대화 / E3 V4 M5)</option>
+                    <option value="1">Case 02: 박외상 환자 (두부외상 / 이상굴곡 / E2 V2 M3)</option>
+                    <option value="2">Case 03: 이경색 환자 (뇌경색 / 지시복종 / E4 V3 M6)</option>
+                    <option value="3">Case 04: 최주정 환자 (알코올 / 회피반응 / E1 V1 M4)</option>
+                    <option value="4">Case 05: 재난 환자 (뇌간타격 / 이상신전 / E1 V1 M2)</option>
                 </select>
                 <button class="btn btn-primary" onclick="deployCase()">📢 전 학생에게 환자 전송</button>
             </div>
 
             <div class="panel">
-                <div class="panel-title title-step2">🎯 단계 2: 실습 종료 및 피드백 공유</div>
+                <h3>🎯 단계 2: 실습 종료 및 피드백 공유</h3>
                 <button class="btn btn-success" onclick="revealFeedback()">🔓 전 학생에게 정답/해설 공개</button>
             </div>
 
             <div class="panel">
-                <div class="panel-title title-qr" style="justify-content: center;">📱 학생 모바일 접속 QR 코드</div>
+                <h3 style="color:#38bdf8; text-align:center; border:none; margin-bottom:12px;">📱 학생 모바일 접속 QR 코드</h3>
                 <div class="qr-box">
                     <div id="qrContainer"></div>
+                    <div class="url-display" id="urlText">생성 중...</div>
                 </div>
             </div>
 
-            <div class="panel" style="background: transparent; border: none; padding: 0;">
-                <div style="font-size:12px; color:#ef4444; margin-bottom:6px; font-weight:bold;">▲ 시스템 안전 리셋</div>
+            <div class="panel" style="border-color: #551a1a;">
+                <h3>⚠️ 시스템 안전 리셋</h3>
                 <button class="btn btn-danger" onclick="resetSystem()">학생 명단 및 방 리셋</button>
             </div>
         </div>
 
         <div class="panel">
-            <div class="right-title">👥 실습 참여 학생 명단 (현재 <span id="studentCount">0</span>명 접속)</div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="12%">학번</th>
-                            <th width="12%">성명</th>
-                            <th width="56%">실시간 간호 사정(질문/처치) 로그</th>
-                            <th width="10%">제출 답안</th>
-                            <th width="10%">실습 판정</th>
-                        </tr>
-                    </thead>
-                    <tbody id="studentTableBody">
-                        <tr><td colspan="5" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h3>👥 실습 참여 학생 명단 (현재 <span id="studentCount" style="color:#38bdf8; font-weight:bold;">0</span>명 접속)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="15%">학번</th>
+                        <th width="15%">성명</th>
+                        <th width="55%">실시간 간호 사정(질문/처치) 로그</th>
+                        <th width="15%">제출 답안</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                    <tr><td colspan="4" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -107,37 +103,40 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 🌟 [중요] 1단계에서 새로 만든 Netlify 주소를 여기에 적어주세요!
-    const targetUrl = "https://vocal-truffle-36781c.netlify.app/"; 
+    // ⚡ [스마트 주소 파싱] 현재 관리자 창 주소를 기반으로 학생용 실습용 GitHub 주소를 자동 추출합니다.
+    const currentLoc = window.location.href;
+    let targetUrl = "https://sfacademy119-netizen.github.io/gcs-ai-practice/"; // 기본 기본주소 세팅
+    
+    if (currentLoc.includes("github.io")) {
+        // 만약 깃허브 서버에서 구동 중이라면 자동으로 상위 경로 주소를 생성
+        targetUrl = currentLoc.replace("admin.html", "");
+    }
+    document.getElementById("urlText").innerText = targetUrl;
 
     function makeLiveQR(url) {
         const qr = qrcode(4, 'M');
         qr.addData(url);
         qr.make();
-        document.getElementById('qrContainer').innerHTML = qr.createImgTag(5);
+        document.getElementById('qrContainer').innerHTML = qr.createImgTag(6);
     }
     makeLiveQR(targetUrl);
 
     function deployCase() {
-        const idx = parseInt(document.getElementById("caseSelect").value) - 1;
+        const idx = parseInt(document.getElementById("caseSelect").value);
         db.ref('quizState').set({ currentCase: idx, revealStatus: "hide" });
-        if(idx === -1) {
-            alert("대기 상태로 변경되었습니다.");
-        } else {
-            alert(`Case 0${idx + 1}번 환자를 출제했습니다.`);
-        }
+        alert(`Case 0${idx + 1}번 환자를 학생들에게 전송했습니다!`);
     }
 
     function revealFeedback() {
         db.ref('quizState').update({ revealStatus: "show" });
-        alert("학생 화면에 정답 알림창과 해설을 전송했습니다.");
+        alert("모든 학생 화면에 정답 및 임상 기전 해설이 공개되었습니다.");
     }
 
     function resetSystem() {
-        if(confirm("명단과 진행 상황을 초기화하시겠습니까?")) {
+        if(confirm("현재 접속 명단과 상태를 전부 초기화하시겠습니까?\n새로운 수업을 시작할 때만 사용하세요.")) {
             db.ref('students').remove();
             db.ref('quizState').set({ currentCase: -1, revealStatus: "hide" });
-            alert("초기화 완료.");
+            alert("전체 리셋이 완료되었습니다.");
         }
     }
 
@@ -149,7 +148,7 @@
 
         if(!list) {
             countSpan.innerText = "0";
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b; padding:40px;">현재 접속한 학생이 없습니다.</td></tr>';
             return;
         }
 
@@ -158,14 +157,13 @@
             count++;
             const s = list[key];
             const tr = document.createElement("tr");
-            const isSub = s.status === 'submitted';
-
+            const stateText = s.status === 'submitted' ? `<span class="status-submitted">✓ 제출완료</span>` : `<span class="status-ready">⏳ 실습중</span>`;
+            
             tr.innerHTML = `
                 <td>${s.id}</td>
-                <td><b>${s.name}</b></td>
-                <td><div class="log-area">${s.logs || '대기 중...'}</div></td>
-                <td><span style="color:#4ade80;">${s.answer || '-'}</span></td>
-                <td class="${isSub ? 'status-submitted' : 'status-ready'}">${isSub ? '제출완료' : '실습중'}</td>
+                <td><b>${s.name}</b><br>${stateText}</td>
+                <td><div class="log-area">${s.logs ? s.logs.replace(/\n/g, '<br>') : '환자 베드 진입 대기 중...'}</div></td>
+                <td><mark style="background:#0f172a; color:#4ade80; padding:4px; border-radius:4px; font-weight:bold;">${s.answer || '-'}</mark></td>
             `;
             tbody.appendChild(tr);
         }
