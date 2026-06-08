@@ -9,6 +9,7 @@
     <style>
         body { font-family: sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; display: flex; justify-content: center; }
         .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; width: 100%; max-width: 450px; }
+        .patient-info { background: #0f172a; border: 1px solid #38bdf8; border-radius: 10px; padding: 12px; margin-bottom: 10px; font-size: 13px; }
         .chat-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; height: 250px; overflow-y: auto; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
         .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; }
         .msg.student { background: #2563eb; align-self: flex-end; }
@@ -20,20 +21,20 @@
 </head>
 <body>
 
-<div class="card" id="mainCard">
+<div class="card">
     <div id="loginSection">
         <h2>📱 실습 입장</h2>
-        <input type="text" id="studentId" placeholder="학번" style="width:100%; padding:10px; margin-bottom:10px;">
-        <input type="text" id="studentName" placeholder="성명" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="studentId" placeholder="학번" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:white;">
+        <input type="text" id="studentName" placeholder="성명" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:white;">
         <button class="btn" onclick="enterRoom()">입장하기</button>
     </div>
 
     <div id="quizSection" style="display: none;">
-        <div id="pName" style="font-weight:bold; color:#38bdf8; margin-bottom:10px;">환자 로딩 중...</div>
+        <div class="patient-info" id="patientInfo">환자 로딩 중...</div>
         <div class="chat-box" id="chatBox"></div>
         <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <input type="text" id="studentMsg" style="flex:1; padding:10px; border-radius:8px;" placeholder="질문/자극 입력">
-            <button onclick="sendToPatient()" style="background:#10b981; border:none; color:white; padding:10px; border-radius:8px;">전송</button>
+            <input type="text" id="studentMsg" style="flex:1; padding:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:white;" placeholder="질문/자극 입력">
+            <button onclick="sendToPatient()" style="background:#10b981; border:none; color:white; padding:10px; border-radius:8px; cursor:pointer;">전송</button>
         </div>
         <div class="gcs-zone">
             <select id="resE"><option value="4">E4</option><option value="3">E3</option><option value="2">E2</option><option value="1">E1</option></select>
@@ -51,8 +52,11 @@
     
     let activeCaseIdx = -1;
     const aiResponses = {
-        0: { name: "Case 01: 김지주 환자", init: "🚨 [환자 상태] 두통 호소 중.", call: "음... 어... 왜들 그래요...", where: "여기가 어디죠?", pain: "💥 손으로 밀쳐냅니다.", command: "🖐️ 손을 움찔거리기만 합니다.", default: "머리가 아파요..." },
-        2: { name: "Case 03: 이경색 환자", init: "🚨 [환자 상태] 눈을 뜨고 주시 중.", call: "이미 눈을 뜨고 있습니다.", where: "어... 집... 가야 돼...", pain: "💥 왼손으로 밀쳐냅니다.", command: "🖐️ 왼손을 힘차게 꽉 쥡니다.", default: "...말이 안 나와..." }
+        0: { name: "김지주 환자", meta: "45세 남성 / 두통 및 오심", init: "🚨 [상태] 눈을 감고 신음함.", call: "음... 왜들 그래요...", where: "여기가 어디죠? 병원인가요?", pain: "💥 아픈 부위를 밀쳐냅니다.", command: "🖐️ 손을 움찔거리기만 합니다.", default: "머리가 아파요..." },
+        1: { name: "박외상 환자", meta: "28세 남성 / 교통사고", init: "🚨 [상태] 미동 없이 누워있음.", call: "...", where: "...", pain: "💥 눈을 뜨고 팔을 굽힙니다.", command: "🖐️ 반응 없습니다.", default: "...으으..." },
+        2: { name: "이경색 환자", meta: "71세 여성 / 우측 마비", init: "🚨 [상태] 자발적으로 눈을 뜨고 주시함.", call: "이미 눈을 뜨고 있습니다.", where: "어... 집... 가야 돼...", pain: "💥 왼손으로 밀쳐냅니다.", command: "🖐️ 명령을 이해하고 왼손을 쥡니다.", default: "...말이 안 나와..." },
+        3: { name: "최주정 환자", meta: "52세 남성 / 알코올 중독", init: "🚨 [상태] 술 냄새와 함께 반응 없음.", call: "...", where: "...", pain: "💥 온몸을 비틀며 회피합니다.", command: "🖐️ 반응 없습니다.", default: "..." },
+        4: { name: "재난 환자", meta: "75세 남성 / 뇌간 손상", init: "🚨 [상태] 창백한 안색, 깊은 혼수.", call: "...", where: "...", pain: "💥 팔을 펴며 비트는 반응을 보입니다.", command: "🖐️ 반응 없습니다.", default: "..." }
     };
 
     function enterRoom() {
@@ -69,25 +73,25 @@
 
     function loadCase(idx) {
         const data = aiResponses[idx];
-        document.getElementById("pName").innerText = data.name;
+        document.getElementById("patientInfo").innerHTML = `<b>${data.name}</b><br>${data.meta}`;
         document.getElementById("chatBox").innerHTML = `<div class="msg patient">${data.init}</div>`;
     }
 
     function sendToPatient() {
         const text = document.getElementById("studentMsg").value;
+        if(!text) return;
         const box = document.getElementById("chatBox");
         box.innerHTML += `<div class="msg student">${text}</div>`;
         
         const data = aiResponses[activeCaseIdx];
         let reply = data.default;
         
-        // 우선순위 로직 (운동 관련 질문 시 command 출력)
         if (/팔|손|움직|쥐어|펴|다리|명령/.test(text)) reply = data.command;
         else if (/아픈|통증|자극|꼬집|누르/.test(text)) reply = data.pain;
         else if (/어디|병원|날짜|이름|누구/.test(text)) reply = data.where;
         else if (/눈|불러|깨워|들리|여보세요/.test(text)) reply = data.call;
 
-        setTimeout(() => box.innerHTML += `<div class="msg patient">${reply}</div>`, 400);
+        setTimeout(() => { box.innerHTML += `<div class="msg patient">${reply}</div>"; box.scrollTop = box.scrollHeight; }, 400);
         document.getElementById("studentMsg").value = "";
     }
 
